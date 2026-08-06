@@ -7,15 +7,24 @@ from app.database import get_db
 from app.models.user import User
 from app.models.student import Student, StudentIdentity, StudentAddress
 from app.schemas.student import StudentCreate, StudentResponse, StudentDetailResponse
+from app.dependencies import get_current_user  # <--- 1. IMPORT DEPENDENCY SATPAM
 
-router = APIRouter(prefix="/api/students", tags=["Students"])
+# 2. PASANG DEPENDENCY DI LEVEL ROUTER (Otomatis mengunci semua endpoint di file ini!)
+router = APIRouter(
+    prefix="/api/students",
+    tags=["Students"],
+    dependencies=[Depends(get_current_user)]  # <--- SEMUA ENDPOINT DI SINI WAJIB TOKEN
+)
+
+
+# --- Semua fungsi di bawah ini sekarang OTOMATIS TERKUNCI ---
 
 @router.post("/", response_model=StudentDetailResponse, status_code=status.HTTP_201_CREATED)
 def create_student(data: StudentCreate, db: Session = Depends(get_db)):
     # 1. Validasi apakah user_id ada di tabel users
     user = db.query(User).filter(User.id == data.user_id).first()
     if not user:
-        raise HTTPException(status_code=404, detail="User ID not found")
+        raise HTTPException(status_code=404, detail="User not found")
         
     # 2. Validasi duplikasi NIK atau NISN
     existing_student = db.query(Student).filter(
@@ -34,7 +43,7 @@ def create_student(data: StudentCreate, db: Session = Depends(get_db)):
         last_name=data.last_name
     )
     db.add(new_student)
-    db.flush()  # Flush agar kita mendapatkan ID new_student tanpa commit terlebih dulu
+    db.flush()
 
     # 4. Simpan data Identity siswa
     new_identity = StudentIdentity(
@@ -75,7 +84,6 @@ def delete_student(student_id: UUID, db: Session = Depends(get_db)):
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
     
-    # Karena ada relasi cascade="all, delete-orphan", identity dan address juga otomatis terhapus
     db.delete(student)
     db.commit()
     return None
