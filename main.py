@@ -1,65 +1,38 @@
-from fastapi import APIRouter, FastAPI, Depends, status, HTTPException
-from sqlalchemy.orm import Session
-from typing import List
-from uuid import UUID
+from fastapi import APIRouter, FastAPI
+from app.database import engine, Base
 
-from app.database import engine, Base, get_db
-from app.models.user import User
-from app.schemas.user import UserCreate, UserResponse
-from app.routers import addresses, auth, contacts, identities, students, parents  # <--- PASTIKAN AUTH ADA DI SINI
-from app.core.security import get_password_hash
+# 1. IMPORT SEMUA ROUTER (Termasuk auth, users, dan schools)
+from app.routers import (
+    addresses, 
+    auth, 
+    contacts, 
+    identities, 
+    students, 
+    parents, 
+    schools,
+    users,
+    employees
+)
 
 # Generate tabel otomatis ke database PostgreSQL di Laragon
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
-    title="School Master Data API",
+    title="SIAKAD API",
     description="Backend API untuk Sistem Master Data Sekolah (FastAPI + PostgreSQL)",
     version="1.0.0"
 )
 
-# Daftarkan Semua Router
+# 2. DAFTARKAN SEMUA ROUTER
 app.include_router(auth.router)
+app.include_router(users.router)   
+app.include_router(schools.router)
 app.include_router(students.router)
 app.include_router(parents.router)
 app.include_router(contacts.router)
-app.include_router(identities.router)  # <-- Kategori baru di /docs
+app.include_router(identities.router)
 app.include_router(addresses.router)
-
-
-# ==========================================
-# --- Endpoints untuk Users (Helper CRUD) ---
-# ==========================================
-
-@app.post("/api/users/", response_model=UserResponse, status_code=status.HTTP_201_CREATED, tags=["Users (Helper)"])
-def create_user(data: UserCreate, db: Session = Depends(get_db)):
-    # Hash password sebelum disimpan ke DB
-    hashed_pwd = get_password_hash(data.password)
-    
-    new_user = User(
-        username=data.username,
-        email=data.email,
-        password=hashed_pwd,
-        role=data.role,
-        is_active=data.is_active
-    )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    return new_user
-
-
-@app.get("/api/users/", response_model=List[UserResponse], tags=["Users (Helper)"])
-def get_all_users(db: Session = Depends(get_db)):
-    return db.query(User).all()
-
-
-@app.get("/api/users/{user_id}", response_model=UserResponse, tags=["Users (Helper)"])
-def get_user_by_id(user_id: UUID, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
+app.include_router(employees.router)
 
 
 @app.get("/", tags=["Root"])
