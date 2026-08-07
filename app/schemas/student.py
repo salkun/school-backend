@@ -1,60 +1,110 @@
-from pydantic import BaseModel, ConfigDict
-from typing import Optional
+from pydantic import BaseModel, Field, ConfigDict
+from typing import Optional, List
 from datetime import date, datetime
 from uuid import UUID
 
-# --- Student Identity Schemas ---
+
+# ==========================================================
+# 1. STUDENT IDENTITY SCHEMAS
+# ==========================================================
 class StudentIdentityCreate(BaseModel):
-    gender: str
-    religion: str
-    family_card_number: str
-    place_of_birth: str
+    family_card_number: Optional[str] = Field(None, max_length=16)
+    gender: str = Field(..., max_length=10)
+    religion: str = Field(..., max_length=30)
+    place_of_birth: str = Field(..., max_length=50)
     date_of_birth: date
-    birth_certificate_number: Optional[str] = None
-    nationality: Optional[str] = "IDN"
+
 
 class StudentIdentityResponse(StudentIdentityCreate):
     id: UUID
-    student_id: UUID
-    created_at: datetime
-    updated_at: datetime
-
     model_config = ConfigDict(from_attributes=True)
 
 
-# --- Student Address Schemas ---
+# ==========================================================
+# 2. STUDENT ADDRESS SCHEMAS
+# ==========================================================
 class StudentAddressCreate(BaseModel):
     street_address: str
-    rt: str
-    rw: str
-    hamlet: Optional[str] = None
-    village: str
-    district: str
-    postal_code: str
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
-    residence_type: int
-    transportation_mode: int
+    rt: str = Field(..., max_length=5)
+    rw: str = Field(..., max_length=5)
+    village: str = Field(..., max_length=50)
+    district: str = Field(..., max_length=50)
+    postal_code: Optional[str] = Field(None, max_length=10)
+    residence_type: Optional[str] = Field(None, max_length=50)
+    # Teks string bebas (bukan kode angka lagi)
+    transportation_mode: Optional[str] = None
+
 
 class StudentAddressResponse(StudentAddressCreate):
     id: UUID
-    student_id: UUID
+    model_config = ConfigDict(from_attributes=True)
+
+# ==========================================================
+# 3. STUDENT CONTACT SCHEMAS
+# ==========================================================
+class StudentContactCreate(BaseModel):
+    phone_number: Optional[str] = Field(None, max_length=20)
+    mobile_number: Optional[str] = Field(None, max_length=20)
+    whatsapp_number: Optional[str] = Field(None, max_length=20)
+    email: Optional[str] = Field(None, max_length=100)
+
+
+class StudentContactResponse(StudentContactCreate):
+    id: UUID
+    model_config = ConfigDict(from_attributes=True)
+
+# ==========================================================
+# 3. PARENT / ORANG TUA SCHEMAS
+# ==========================================================
+class ParentBase(BaseModel):
+    nik: Optional[str] = Field(None, max_length=16)
+    full_name: str = Field(..., max_length=100)
+    place_of_birth: Optional[str] = Field(None, max_length=50)
+    birth_year: Optional[str] = Field(None, max_length=4)
+    
+    # Semua inputan di bawah berupa teks string bebas biasa
+    education_code: Optional[str] = None
+    occupation_code: Optional[str] = None
+    income_code: Optional[str] = None
+    special_need_code: Optional[str] = None
+    
+    address: Optional[str] = None
+    phone_number: Optional[str] = Field(None, max_length=20)
+    whatsapp_number: Optional[str] = Field(None, max_length=20)
+
+
+class ParentCreate(ParentBase):
+    pass
+
+
+class ParentResponse(ParentBase):
+    id: UUID
     created_at: datetime
     updated_at: datetime
-
     model_config = ConfigDict(from_attributes=True)
 
 
-# --- Student Schemas ---
+class StudentParentInput(ParentCreate):
+    relationship_type: int = Field(..., ge=1, le=3, description="1: Ayah, 2: Ibu, 3: Wali")
+
+
+class StudentParentDetailResponse(BaseModel):
+    relationship_type: int
+    parent: ParentResponse
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ==========================================================
+# 4. STUDENT MAIN SCHEMAS (BERSIH & TERPISAH)
+# ==========================================================
 class StudentCreate(BaseModel):
     user_id: UUID
-    nik: str
-    nisn: str
-    full_name: str
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    identity: StudentIdentityCreate
-    address: StudentAddressCreate
+    nik: str = Field(..., min_length=16, max_length=16)
+    nisn: str = Field(..., min_length=5, max_length=7)
+    full_name: str = Field(..., max_length=100)
+    first_name: str = Field(..., max_length=50)
+    last_name: Optional[str] = Field(None, max_length=50)
+
 
 class StudentResponse(BaseModel):
     id: UUID
@@ -62,16 +112,47 @@ class StudentResponse(BaseModel):
     nik: str
     nisn: str
     full_name: str
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
+    first_name: str
+    last_name: Optional[str]
     created_at: datetime
     updated_at: datetime
-
     model_config = ConfigDict(from_attributes=True)
 
-# Schema dengan relasi lengkap (untuk detail siswa)
+
+# Dipakai saat GET /api/students/{student_id} untuk menampikan relasi lengkap
 class StudentDetailResponse(StudentResponse):
     identity: Optional[StudentIdentityResponse] = None
     address: Optional[StudentAddressResponse] = None
+    contact: Optional[StudentContactResponse] = None
+    student_parents: List[StudentParentDetailResponse] = []
+    model_config = ConfigDict(from_attributes=True)
 
+# 1. Schema Input / Create Parent
+class StudentParentCreate(BaseModel):
+    father_name: Optional[str] = None
+    father_job: Optional[str] = None
+    mother_name: Optional[str] = None
+    mother_job: Optional[str] = None
+    guardian_name: Optional[str] = None
+    guardian_job: Optional[str] = None
+    parent_phone: Optional[str] = None
+
+# 2. Schema Response Parent
+class StudentParentResponse(StudentParentCreate):
+    id: UUID
+    student_id: UUID
+    model_config = ConfigDict(from_attributes=True)
+
+# 3. Gabungan di Student Detail Response (Supaya tampil lengkap saat di-GET)
+class StudentDetailResponse(BaseModel):
+    id: UUID
+    user_id: UUID
+    nik: str
+    nisn: str
+    full_name: str
+    
+    # Masukkan relasi di sini (Gunakan Optional agar tidak error jika belum diisi):
+    parent: Optional[StudentParentResponse] = None
+    # (Bisa juga ditambahkan identity, address, contact jika sudah ada)
+    
     model_config = ConfigDict(from_attributes=True)

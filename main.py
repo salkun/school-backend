@@ -6,7 +6,7 @@ from uuid import UUID
 from app.database import engine, Base, get_db
 from app.models.user import User
 from app.schemas.user import UserCreate, UserResponse
-from app.routers import students, auth  # <--- PASTIKAN AUTH ADA DI SINI
+from app.routers import addresses, auth, contacts, identities, students, parents  # <--- PASTIKAN AUTH ADA DI SINI
 from app.core.security import get_password_hash
 
 # Generate tabel otomatis ke database PostgreSQL di Laragon
@@ -19,8 +19,12 @@ app = FastAPI(
 )
 
 # Daftarkan Semua Router
-app.include_router(auth.router)      # <--- PASTIKAN BARIS INI ADA
+app.include_router(auth.router)
 app.include_router(students.router)
+app.include_router(parents.router)
+app.include_router(contacts.router)
+app.include_router(identities.router)  # <-- Kategori baru di /docs
+app.include_router(addresses.router)
 
 
 # ==========================================

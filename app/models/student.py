@@ -1,42 +1,48 @@
 import uuid
-from datetime import datetime, date
-from sqlalchemy import Column, String, Date, Integer, Numeric, Text, ForeignKey, DateTime
+from sqlalchemy import Column, String, Integer, Text, ForeignKey, DateTime
+from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
+
 from app.database import Base
+
 
 class Student(Base):
     __tablename__ = "students"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), unique=True, nullable=False)
-    nik = Column(String, unique=True, nullable=False)
-    nisn = Column(String, unique=True, nullable=False)
-    full_name = Column(String, nullable=False)
-    first_name = Column(String, nullable=True)
-    last_name = Column(String, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    nik = Column(String(16), unique=True, index=True, nullable=False)
+    nisn = Column(String(7), unique=True, index=True, nullable=False)
+    full_name = Column(String(100), nullable=False)
+    first_name = Column(String(50), nullable=False)
+    last_name = Column(String(50), nullable=True)
 
-    # Relasi 1-to-1 ke tabel identity & address (cascade hapus otomatis jika student dihapus)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # Relasi
+    user = relationship("User", back_populates="students")
     identity = relationship("StudentIdentity", back_populates="student", uselist=False, cascade="all, delete-orphan")
     address = relationship("StudentAddress", back_populates="student", uselist=False, cascade="all, delete-orphan")
+    parent = relationship("StudentParent", back_populates="student", uselist=False, cascade="all, delete-orphan")
+    contact = relationship("StudentContact", back_populates="student", uselist=False, cascade="all, delete-orphan")
+    # REVISI: Direname jadi student_parents
+    student_parents = relationship("StudentParentRelation", back_populates="student", cascade="all, delete-orphan")
+    # Tambahkan baris ini di dalam class Student:
+    parent_relations = relationship("app.models.parent.StudentParentRelation", back_populates="student", cascade="all, delete-orphan")
 
 
 class StudentIdentity(Base):
     __tablename__ = "student_identities"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    student_id = Column(UUID(as_uuid=True), ForeignKey("students.id"), unique=True, nullable=False)
-    gender = Column(String(1), nullable=False)  # 'M' atau 'F'
-    religion = Column(String, nullable=False)
-    family_card_number = Column(String, nullable=False)
-    place_of_birth = Column(String, nullable=False)
-    date_of_birth = Column(Date, nullable=False)
-    birth_certificate_number = Column(String, nullable=True)
-    nationality = Column(String, default="IDN")
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    student_id = Column(UUID(as_uuid=True), ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
+    family_card_number = Column(String(16), nullable=True)
+    gender = Column(String(10), nullable=False)
+    religion = Column(String(30), nullable=False)
+    place_of_birth = Column(String(50), nullable=False)
+    date_of_birth = Column(String(20), nullable=False)
 
     student = relationship("Student", back_populates="identity")
 
@@ -45,19 +51,46 @@ class StudentAddress(Base):
     __tablename__ = "student_addresses"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    student_id = Column(UUID(as_uuid=True), ForeignKey("students.id"), unique=True, nullable=False)
+    student_id = Column(UUID(as_uuid=True), ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
     street_address = Column(Text, nullable=False)
     rt = Column(String(5), nullable=False)
     rw = Column(String(5), nullable=False)
-    hamlet = Column(String, nullable=True)  # Dusun
-    village = Column(String, nullable=False)  # Kelurahan/Desa
-    district = Column(String, nullable=False)  # Kecamatan
-    postal_code = Column(String(10), nullable=False)
-    latitude = Column(Numeric(10, 8), nullable=True)
-    longitude = Column(Numeric(11, 8), nullable=True)
-    residence_type = Column(Integer, nullable=False)  # 1=Orang Tua, 2=Wali, 3=Kos, 4=Asrama, 5=Panti
-    transportation_mode = Column(Integer, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    village = Column(String(50), nullable=False)
+    district = Column(String(50), nullable=False)
+    postal_code = Column(String(10), nullable=True)
+    residence_type = Column(String(50), nullable=True)
+    
+    # REVISI: String inputan biasa
+    transportation_mode = Column(String(100), nullable=True)
 
     student = relationship("Student", back_populates="address")
+
+class StudentContact(Base):
+    __tablename__ = "student_contacts"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    student_id = Column(UUID(as_uuid=True), ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
+    
+    phone_number = Column(String(20), nullable=True)     # No Telepon Rumah
+    mobile_number = Column(String(20), nullable=True)    # No HP
+    whatsapp_number = Column(String(20), nullable=True)  # No WA
+    email = Column(String(100), nullable=True)           # Email
+
+    student = relationship("Student", back_populates="contact")
+
+# --- MODEL STUDENT PARENT ---
+class StudentParent(Base):
+    __tablename__ = "student_parents"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    student_id = Column(UUID(as_uuid=True), ForeignKey("students.id", ondelete="CASCADE"), unique=True, nullable=False)
+    
+    father_name = Column(String(100), nullable=True)
+    father_job = Column(String(50), nullable=True)
+    mother_name = Column(String(100), nullable=True)
+    mother_job = Column(String(50), nullable=True)
+    guardian_name = Column(String(100), nullable=True)
+    guardian_job = Column(String(50), nullable=True)
+    parent_phone = Column(String(20), nullable=True)
+
+    student = relationship("Student", back_populates="parent")

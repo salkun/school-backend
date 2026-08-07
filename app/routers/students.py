@@ -5,72 +5,59 @@ from uuid import UUID
 
 from app.database import get_db
 from app.models.user import User
-from app.models.student import Student, StudentIdentity, StudentAddress
+from app.models.student import Student
 from app.schemas.student import StudentCreate, StudentResponse, StudentDetailResponse
-from app.dependencies import get_current_user  # <--- 1. IMPORT DEPENDENCY SATPAM
+from app.dependencies import require_admin, require_staff  # <-- Satpam RBAC di-import
 
-# 2. PASANG DEPENDENCY DI LEVEL ROUTER (Otomatis mengunci semua endpoint di file ini!)
 router = APIRouter(
     prefix="/api/students",
-    tags=["Students"],
-    dependencies=[Depends(get_current_user)]  # <--- SEMUA ENDPOINT DI SINI WAJIB TOKEN
+    tags=["Students"]
 )
 
-
-# --- Semua fungsi di bawah ini sekarang OTOMATIS TERKUNCI ---
-
-@router.post("/", response_model=StudentDetailResponse, status_code=status.HTTP_201_CREATED)
+# 1. HANYA ADMIN: Boleh membuat siswa baru
+@router.post(
+    "/",
+    response_model=StudentResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_admin)]  # <-- Pasang satpam admin
+)
 def create_student(data: StudentCreate, db: Session = Depends(get_db)):
-    # 1. Validasi apakah user_id ada di tabel users
+    # 1. Validasi user_id
     user = db.query(User).filter(User.id == data.user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
         
-    # 2. Validasi duplikasi NIK atau NISN
+    # 2. Validasi duplikasi NIK / NISN
     existing_student = db.query(Student).filter(
         (Student.nik == data.nik) | (Student.nisn == data.nisn)
     ).first()
     if existing_student:
         raise HTTPException(status_code=400, detail="NIK or NISN is already registered")
 
-    # 3. Simpan data Student utama
-    new_student = Student(
-        user_id=data.user_id,
-        nik=data.nik,
-        nisn=data.nisn,
-        full_name=data.full_name,
-        first_name=data.first_name,
-        last_name=data.last_name
-    )
+    # 3. Simpan data Student saja
+    new_student = Student(**data.model_dump())
     db.add(new_student)
-    db.flush()
-
-    # 4. Simpan data Identity siswa
-    new_identity = StudentIdentity(
-        student_id=new_student.id,
-        **data.identity.model_dump()
-    )
-    db.add(new_identity)
-
-    # 5. Simpan data Address siswa
-    new_address = StudentAddress(
-        student_id=new_student.id,
-        **data.address.model_dump()
-    )
-    db.add(new_address)
-
-    # 6. Commit transaksi ke PostgreSQL
     db.commit()
     db.refresh(new_student)
     return new_student
 
 
-@router.get("/", response_model=List[StudentResponse])
+# 2. ADMIN & GURU: Boleh melihat daftar semua siswa
+@router.get(
+    "/",
+    response_model=List[StudentResponse],
+    dependencies=[Depends(require_staff)]  # <-- Pasang satpam staff (admin & teacher)
+)
 def get_all_students(db: Session = Depends(get_db)):
     return db.query(Student).all()
 
 
-@router.get("/{student_id}", response_model=StudentDetailResponse)
+# 3. ADMIN & GURU: Boleh melihat detail biodata siswa
+@router.get(
+    "/{student_id}",
+    response_model=StudentDetailResponse,
+    dependencies=[Depends(require_staff)]  # <-- Pasang satpam staff (admin & teacher)
+)
 def get_student_detail(student_id: UUID, db: Session = Depends(get_db)):
     student = db.query(Student).filter(Student.id == student_id).first()
     if not student:
@@ -78,12 +65,16 @@ def get_student_detail(student_id: UUID, db: Session = Depends(get_db)):
     return student
 
 
-@router.delete("/{student_id}", status_code=status.HTTP_204_NO_CONTENT)
+# 4. HANYA ADMIN: Boleh menghapus data siswa
+@router.delete(
+    "/{student_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_admin)]  # <-- Pasang satpam admin
+)
 def delete_student(student_id: UUID, db: Session = Depends(get_db)):
     student = db.query(Student).filter(Student.id == student_id).first()
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
-    
     db.delete(student)
     db.commit()
     return None

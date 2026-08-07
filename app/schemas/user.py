@@ -12,10 +12,12 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
 
-class UserResponse(UserBase):
+class UserResponse(BaseModel):
     id: UUID
-    last_login_at: Optional[datetime] = None
+    username: str
+    email: Optional[str] = None  # <--- UBAH JADI OPTIONAL AGAR TIDAK ERROR JIKA KOSONG / NULL
+    role: str
     created_at: datetime
     updated_at: datetime
-
+    
     model_config = ConfigDict(from_attributes=True)
