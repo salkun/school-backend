@@ -69,7 +69,7 @@ A robust and scalable Backend API for a School Management System (Sistem Informa
 * PostgreSQL server running locally (e.g., via Laragon or pgAdmin)
 
 ### 2.Clone the Repository
-    git clone [https://github.com/yourusername/siakad-api.git](https://github.com/yourusername/siakad-api.git)
+    git clone https://github.com/salkun/school-backend.git
     cd siakad-api
 
 ### 3. Setup Virtual Environment
