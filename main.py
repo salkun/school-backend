@@ -5,13 +5,17 @@ from app.database import engine, Base
 from app.routers import (
     addresses, 
     auth, 
+    schools,
+    master,
     contacts, 
     identities, 
     students, 
     parents, 
-    schools,
     users,
-    employees
+    employees,
+    employee_identities,
+    employee_contacts,
+    employee_children
 )
 
 # Generate tabel otomatis ke database PostgreSQL di Laragon
@@ -25,14 +29,18 @@ app = FastAPI(
 
 # 2. DAFTARKAN SEMUA ROUTER
 app.include_router(auth.router)
-app.include_router(users.router)   
-app.include_router(schools.router)
+app.include_router(users.router) 
+app.include_router(schools.router)  
+app.include_router(master.router)
 app.include_router(students.router)
 app.include_router(parents.router)
 app.include_router(contacts.router)
 app.include_router(identities.router)
 app.include_router(addresses.router)
 app.include_router(employees.router)
+app.include_router(employee_identities.router) 
+app.include_router(employee_contacts.router) 
+app.include_router(employee_children.router)
 
 
 @app.get("/", tags=["Root"])

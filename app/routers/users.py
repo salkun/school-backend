@@ -7,8 +7,6 @@ from app.database import get_db
 from app.models.user import User
 from app.schemas.user import UserCreate, UserResponse, UserUpdate
 from app.dependencies import require_admin
-
-# SESUAIKAN IMPORT INI dengan lokasi fungsi hash kamu (contoh: app.core.security / app.utils.security)
 from app.core.security import get_password_hash  
 
 router = APIRouter(
@@ -42,9 +40,9 @@ def create_user(data: UserCreate, db: Session = Depends(get_db)):
     new_user = User(
         username=data.username,
         email=data.email,
-        password=hashed_pwd,  # Gunakan nama kolom yang benar: hashed_password
+        password=hashed_pwd, 
         role=data.role,
-        school_id=getattr(data, "school_id", None),  # Aman jika school_id opsional
+        school_id=getattr(data, "school_id", None),  
         is_active=getattr(data, "is_active", True)
     )
     
