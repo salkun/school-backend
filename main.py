@@ -1,4 +1,5 @@
 # pyrefly: ignore [missing-import]
+from app.routers import backup
 from fastapi import FastAPI
 from app.database import engine, Base
 
@@ -50,7 +51,7 @@ app.include_router(employee_subjects.router)
 app.include_router(enrollments.router)
 app.include_router(positions.router)
 app.include_router(schedules.router)
-
+app.include_router(backup.router)
 
 @app.get("/", tags=["Root"])
 def root():
