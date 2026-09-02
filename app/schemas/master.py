@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, time
 from uuid import UUID
 
 # --- 1. Academic Year ---
@@ -64,6 +64,47 @@ class SubjectCreate(BaseModel):
     is_active: bool = True
 
 class SubjectResponse(SubjectCreate):
+    id: UUID
+    created_at: datetime
+    updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+# --- 6. Position ---
+class PositionCreate(BaseModel):
+    name: str = Field(..., example="Wakil Kepala Bidang Kurikulum")
+    is_structural: bool = False
+    is_active: bool = True
+
+class PositionResponse(PositionCreate):
+    id: UUID
+    created_at: datetime
+    updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+# --- 7. Homeroom Assignment ---
+class HomeroomAssignmentCreate(BaseModel):
+    employee_id: UUID
+    classroom_id: UUID
+    academic_year_id: UUID
+
+class HomeroomAssignmentResponse(HomeroomAssignmentCreate):
+    id: UUID
+    created_at: datetime
+    updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+# --- 8. Teaching Schedule ---
+class TeachingScheduleCreate(BaseModel):
+    employee_id: UUID
+    subject_id: UUID
+    classroom_id: UUID
+    academic_year_id: UUID
+    semester_id: UUID
+    day_of_week: str = Field(..., example="Senin")
+    start_time: time
+    end_time: time
+
+class TeachingScheduleResponse(TeachingScheduleCreate):
     id: UUID
     created_at: datetime
     updated_at: datetime

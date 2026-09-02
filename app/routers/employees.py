@@ -10,11 +10,10 @@ from app.dependencies import require_admin, require_staff
 
 router = APIRouter(
     prefix="/api/employees",
-    tags=["Employees"],
-    dependencies=[Depends(require_admin)]  # Default kunci Admin
+    tags=["Employees"]
 )
 
-@router.post("/", response_model=EmployeeResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=EmployeeResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_admin)])
 def create_employee(data: EmployeeCreate, db: Session = Depends(get_db)):
     # Cek duplikasi NIK
     if db.query(Employee).filter(Employee.nik == data.nik).first():
@@ -40,7 +39,7 @@ def get_employee_by_id(employee_id: UUID, db: Session = Depends(get_db)):
     return employee
 
 
-@router.put("/{employee_id}", response_model=EmployeeResponse)
+@router.put("/{employee_id}", response_model=EmployeeResponse, dependencies=[Depends(require_admin)])
 def update_employee(employee_id: UUID, data: EmployeeUpdate, db: Session = Depends(get_db)):
     employee = db.query(Employee).filter(Employee.id == employee_id).first()
     if not employee:
@@ -55,7 +54,7 @@ def update_employee(employee_id: UUID, data: EmployeeUpdate, db: Session = Depen
     return employee
 
 
-@router.delete("/{employee_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{employee_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_admin)])
 def delete_employee(employee_id: UUID, db: Session = Depends(get_db)):
     employee = db.query(Employee).filter(Employee.id == employee_id).first()
     if not employee:

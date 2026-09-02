@@ -55,6 +55,10 @@ class Employee(Base):
     identity = relationship("EmployeeIdentity", back_populates="employee", uselist=False, cascade="all, delete")
     contacts = relationship("EmployeeContact", back_populates="employee", cascade="all, delete-orphan")
     children = relationship("EmployeeChild", back_populates="employee", cascade="all, delete-orphan")
+    subjects = relationship("Subject", secondary="employee_subjects", back_populates="employees")
+    positions = relationship("EmployeePosition", back_populates="employee", cascade="all, delete-orphan")
+    teaching_schedules = relationship("TeachingSchedule", back_populates="employee", cascade="all, delete-orphan")
+    homeroom_assignments = relationship("HomeroomAssignment", back_populates="employee", cascade="all, delete-orphan")
 
 class EmployeeIdentity(Base):
     __tablename__ = "employee_identities"
@@ -144,3 +148,20 @@ class EmployeeChild(Base):
 
     # Relasi balik ke Employee
     employee = relationship("Employee", back_populates="children")
+
+class EmployeePosition(Base):
+    __tablename__ = "employee_positions"
+    __table_args__ = {'extend_existing': True}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    employee_id = Column(UUID(as_uuid=True), ForeignKey("employees.id", ondelete="CASCADE"), nullable=False)
+    position_id = Column(UUID(as_uuid=True), ForeignKey("positions.id", ondelete="CASCADE"), nullable=False)
+    academic_year_id = Column(UUID(as_uuid=True), ForeignKey("academic_years.id", ondelete="CASCADE"), nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    employee = relationship("Employee", back_populates="positions")
+    position = relationship("Position")
+    academic_year = relationship("AcademicYear")

@@ -5,7 +5,7 @@ from uuid import UUID
 
 class UserBase(BaseModel):
     username: str
-    email: EmailStr
+    email: Optional[EmailStr] = None
     role: Optional[str] = "student"
     school_id: Optional[UUID] = None
     is_active: Optional[bool] = True

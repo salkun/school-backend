@@ -38,15 +38,32 @@ def add_parent_to_student(
     parent_data = data.model_dump()
     rel_type = parent_data.pop("relationship_type")
 
-    # 3. Simpan ke tabel 'parents'
-    new_parent = Parent(**parent_data)
-    db.add(new_parent)
-    db.flush()  # flush agar new_parent.id langsung tersedia tanpa commit dulu
+    # 3. Cek apakah parent dengan NIK ini sudah ada di database (misal orang tua dari kakak/adik)
+    parent_obj = None
+    if parent_data.get("nik"):
+        parent_obj = db.query(Parent).filter(Parent.nik == parent_data["nik"]).first()
+
+    if parent_obj:
+        # Cek apakah relasi sudah ada untuk siswa ini
+        existing_rel = db.query(StudentParentRelation).filter(
+            StudentParentRelation.student_id == student_id,
+            StudentParentRelation.parent_id == parent_obj.id
+        ).first()
+        if existing_rel:
+            raise HTTPException(status_code=400, detail="Parent relation already exists for this student")
+        # Update biodata jika ada perubahan
+        for k, v in parent_data.items():
+            if v is not None:
+                setattr(parent_obj, k, v)
+    else:
+        parent_obj = Parent(**parent_data)
+        db.add(parent_obj)
+        db.flush()  # flush agar parent_obj.id langsung tersedia
 
     # 4. Simpan ke tabel pivot 'student_parent_relations'
     new_relation = StudentParentRelation(
         student_id=student_id,
-        parent_id=new_parent.id,
+        parent_id=parent_obj.id,
         relationship_type=rel_type
     )
     db.add(new_relation)

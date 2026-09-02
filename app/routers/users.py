@@ -24,9 +24,9 @@ def create_user(data: UserCreate, db: Session = Depends(get_db)):
     Hanya Admin yang bisa membuat user baru (termasuk mengaitkan school_id).
     """
     # 1. Cek apakah username atau email sudah ada di database
-    existing_user = db.query(User).filter(
-        (User.username == data.username) | (User.email == data.email)
-    ).first()
+    existing_user = db.query(User).filter(User.username == data.username).first()
+    if not existing_user and data.email:
+        existing_user = db.query(User).filter(User.email == data.email).first()
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -83,9 +83,20 @@ def update_user(user_id: UUID, data: UserUpdate, db: Session = Depends(get_db)):
     # 2. Ambil data yang dikirim saja (exclude yang None / tidak dikirim)
     update_data = data.model_dump(exclude_unset=True)
 
+    # Validasi duplikasi username atau email jika diubah
+    if "username" in update_data and update_data["username"]:
+        dup_username = db.query(User).filter(User.username == update_data["username"], User.id != user_id).first()
+        if dup_username:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already in use")
+
+    if "email" in update_data and update_data["email"]:
+        dup_email = db.query(User).filter(User.email == update_data["email"], User.id != user_id).first()
+        if dup_email:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already in use")
+
     # 3. Jika password ikut diganti, hash terlebih dahulu
     if "password" in update_data and update_data["password"]:
-        update_data["hashed_password"] = get_password_hash(update_data.pop("password"))
+        update_data["password"] = get_password_hash(update_data.pop("password"))
     elif "password" in update_data:
         update_data.pop("password")
 

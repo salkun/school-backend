@@ -10,11 +10,10 @@ from app.dependencies import require_admin, require_staff
 
 router = APIRouter(
     prefix="/api/employee-children",
-    tags=["Employee Children"],
-    dependencies=[Depends(require_admin)]
+    tags=["Employee Children"]
 )
 
-@router.post("/", response_model=EmployeeChildResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=EmployeeChildResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_admin)])
 def create_employee_child(data: EmployeeChildCreate, db: Session = Depends(get_db)):
     employee = db.query(Employee).filter(Employee.id == data.employee_id).first()
     if not employee:
@@ -43,7 +42,7 @@ def get_children_by_employee_id(employee_id: UUID, db: Session = Depends(get_db)
     children = db.query(EmployeeChild).filter(EmployeeChild.employee_id == employee_id).all()
     return children
 
-@router.put("/{child_id}", response_model=EmployeeChildResponse)
+@router.put("/{child_id}", response_model=EmployeeChildResponse, dependencies=[Depends(require_admin)])
 def update_employee_child(child_id: UUID, data: EmployeeChildUpdate, db: Session = Depends(get_db)):
     child = db.query(EmployeeChild).filter(EmployeeChild.id == child_id).first()
     if not child:
@@ -57,7 +56,7 @@ def update_employee_child(child_id: UUID, data: EmployeeChildUpdate, db: Session
     db.refresh(child)
     return child
 
-@router.delete("/{child_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{child_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_admin)])
 def delete_employee_child(child_id: UUID, db: Session = Depends(get_db)):
     child = db.query(EmployeeChild).filter(EmployeeChild.id == child_id).first()
     if not child:

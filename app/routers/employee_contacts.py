@@ -10,11 +10,10 @@ from app.dependencies import require_admin, require_staff
 
 router = APIRouter(
     prefix="/api/employee-contacts",
-    tags=["Employee Contacts"],
-    dependencies=[Depends(require_admin)]
+    tags=["Employee Contacts"]
 )
 
-@router.post("/", response_model=EmployeeContactResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=EmployeeContactResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_admin)])
 def create_employee_contact(data: EmployeeContactCreate, db: Session = Depends(get_db)):
     employee = db.query(Employee).filter(Employee.id == data.employee_id).first()
     if not employee:
@@ -43,7 +42,7 @@ def get_contacts_by_employee_id(employee_id: UUID, db: Session = Depends(get_db)
     contacts = db.query(EmployeeContact).filter(EmployeeContact.employee_id == employee_id).all()
     return contacts
 
-@router.put("/{contact_id}", response_model=EmployeeContactResponse)
+@router.put("/{contact_id}", response_model=EmployeeContactResponse, dependencies=[Depends(require_admin)])
 def update_employee_contact(contact_id: UUID, data: EmployeeContactUpdate, db: Session = Depends(get_db)):
     contact = db.query(EmployeeContact).filter(EmployeeContact.id == contact_id).first()
     if not contact:
@@ -57,7 +56,7 @@ def update_employee_contact(contact_id: UUID, data: EmployeeContactUpdate, db: S
     db.refresh(contact)
     return contact
 
-@router.delete("/{contact_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{contact_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_admin)])
 def delete_employee_contact(contact_id: UUID, db: Session = Depends(get_db)):
     contact = db.query(EmployeeContact).filter(EmployeeContact.id == contact_id).first()
     if not contact:

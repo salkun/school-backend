@@ -51,5 +51,5 @@ class StudentParentRelation(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     # Relasi balik
-    student = relationship("app.models.student.Student", back_populates="parent_relations")
+    student = relationship("app.models.student.Student", back_populates="student_parents")
     parent = relationship("Parent", back_populates="student_relations")

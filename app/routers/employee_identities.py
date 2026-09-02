@@ -10,12 +10,11 @@ from app.dependencies import require_admin, require_staff
 
 router = APIRouter(
     prefix="/api/employee-identities",
-    tags=["Employee Identities"],
-    dependencies=[Depends(require_admin)]  # Default kunci Admin
+    tags=["Employee Identities"]
 )
 
 # 1. CREATE EMPLOYEE IDENTITY (POST)
-@router.post("/", response_model=EmployeeIdentityResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=EmployeeIdentityResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_admin)])
 def create_employee_identity(data: EmployeeIdentityCreate, db: Session = Depends(get_db)):
     # Cek apakah Employee (Pegawai) ada
     employee = db.query(Employee).filter(Employee.id == data.employee_id).first()
@@ -59,7 +58,7 @@ def get_identity_by_employee_id(employee_id: UUID, db: Session = Depends(get_db)
 
 
 # 5. UPDATE IDENTITY (PUT)
-@router.put("/{identity_id}", response_model=EmployeeIdentityResponse)
+@router.put("/{identity_id}", response_model=EmployeeIdentityResponse, dependencies=[Depends(require_admin)])
 def update_employee_identity(identity_id: UUID, data: EmployeeIdentityUpdate, db: Session = Depends(get_db)):
     identity = db.query(EmployeeIdentity).filter(EmployeeIdentity.id == identity_id).first()
     if not identity:
@@ -75,7 +74,7 @@ def update_employee_identity(identity_id: UUID, data: EmployeeIdentityUpdate, db
 
 
 # 6. DELETE IDENTITY (DELETE)
-@router.delete("/{identity_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{identity_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_admin)])
 def delete_employee_identity(identity_id: UUID, db: Session = Depends(get_db)):
     identity = db.query(EmployeeIdentity).filter(EmployeeIdentity.id == identity_id).first()
     if not identity:

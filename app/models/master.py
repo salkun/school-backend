@@ -1,10 +1,18 @@
 import uuid
-from sqlalchemy import Column, String, Boolean, Integer, Float, ForeignKey, DateTime
+from sqlalchemy import Column, String, Boolean, Integer, Float, ForeignKey, DateTime, Table, Time
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.database import Base
+
+# Pivot table: Employee <-> Subject (many-to-many)
+employee_subjects = Table(
+    "employee_subjects",
+    Base.metadata,
+    Column("employee_id", UUID(as_uuid=True), ForeignKey("employees.id", ondelete="CASCADE"), primary_key=True),
+    Column("subject_id", UUID(as_uuid=True), ForeignKey("subjects.id", ondelete="CASCADE"), primary_key=True),
+)
 
 # ==========================================
 # 1. ACADEMIC YEAR (Tahun Pelajaran)
@@ -81,7 +89,7 @@ class Classroom(Base):
     height = Column(Float, nullable=True)             # Tinggi
     is_active = Column(Boolean, default=True, nullable=False)
 
-    # Relasi balik
+    # Relasi
     building = relationship("Building", back_populates="classrooms")
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -99,6 +107,70 @@ class Subject(Base):
     name = Column(String(100), nullable=False)
     lesson_hours = Column(Integer, nullable=False)    # Jam Pelajaran (JP)
     is_active = Column(Boolean, default=True, nullable=False)
+
+    # Relasi many-to-many ke Employee
+    employees = relationship("Employee", secondary="employee_subjects", back_populates="subjects")
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+# ==========================================
+# 6. POSITION (Jabatan)
+# ==========================================
+class Position(Base):
+    __tablename__ = "positions"
+    __table_args__ = {'extend_existing': True}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(100), nullable=False)
+    is_structural = Column(Boolean, default=False, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+# ==========================================
+# 7. HOMEROOM ASSIGNMENT (Riwayat Wali Kelas)
+# ==========================================
+class HomeroomAssignment(Base):
+    __tablename__ = "homeroom_assignments"
+    __table_args__ = {'extend_existing': True}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    employee_id = Column(UUID(as_uuid=True), ForeignKey("employees.id", ondelete="CASCADE"), nullable=False)
+    classroom_id = Column(UUID(as_uuid=True), ForeignKey("classrooms.id", ondelete="CASCADE"), nullable=False)
+    academic_year_id = Column(UUID(as_uuid=True), ForeignKey("academic_years.id", ondelete="CASCADE"), nullable=False)
+    
+    employee = relationship("Employee", back_populates="homeroom_assignments")
+    classroom = relationship("Classroom")
+    academic_year = relationship("AcademicYear")
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+# ==========================================
+# 8. TEACHING SCHEDULE (Jadwal Mengajar)
+# ==========================================
+class TeachingSchedule(Base):
+    __tablename__ = "teaching_schedules"
+    __table_args__ = {'extend_existing': True}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    employee_id = Column(UUID(as_uuid=True), ForeignKey("employees.id", ondelete="CASCADE"), nullable=False)
+    subject_id = Column(UUID(as_uuid=True), ForeignKey("subjects.id", ondelete="CASCADE"), nullable=False)
+    classroom_id = Column(UUID(as_uuid=True), ForeignKey("classrooms.id", ondelete="CASCADE"), nullable=False)
+    academic_year_id = Column(UUID(as_uuid=True), ForeignKey("academic_years.id", ondelete="CASCADE"), nullable=False)
+    semester_id = Column(UUID(as_uuid=True), ForeignKey("semesters.id", ondelete="CASCADE"), nullable=False)
+    
+    day_of_week = Column(String(20), nullable=False)
+    start_time = Column(Time, nullable=False)
+    end_time = Column(Time, nullable=False)
+
+    employee = relationship("Employee", back_populates="teaching_schedules")
+    subject = relationship("Subject")
+    classroom = relationship("Classroom")
+    academic_year = relationship("AcademicYear")
+    semester = relationship("Semester")
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)

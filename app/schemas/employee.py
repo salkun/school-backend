@@ -65,3 +65,17 @@ class EmployeeResponse(EmployeeCreate):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+# 4. Schema Employee Position
+class EmployeePositionCreate(BaseModel):
+    employee_id: UUID
+    position_id: UUID
+    academic_year_id: UUID
+    is_active: bool = True
+
+class EmployeePositionResponse(EmployeePositionCreate):
+    id: UUID
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

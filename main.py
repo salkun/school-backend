@@ -1,4 +1,5 @@
-from fastapi import APIRouter, FastAPI
+# pyrefly: ignore [missing-import]
+from fastapi import FastAPI
 from app.database import engine, Base
 
 # 1. IMPORT SEMUA ROUTER (Termasuk auth, users, dan schools)
@@ -15,7 +16,11 @@ from app.routers import (
     employees,
     employee_identities,
     employee_contacts,
-    employee_children
+    employee_children,
+    employee_subjects,
+    enrollments,
+    positions,
+    schedules
 )
 
 # Generate tabel otomatis ke database PostgreSQL di Laragon
@@ -41,6 +46,10 @@ app.include_router(employees.router)
 app.include_router(employee_identities.router) 
 app.include_router(employee_contacts.router) 
 app.include_router(employee_children.router)
+app.include_router(employee_subjects.router)
+app.include_router(enrollments.router)
+app.include_router(positions.router)
+app.include_router(schedules.router)
 
 
 @app.get("/", tags=["Root"])
