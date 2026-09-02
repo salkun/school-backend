@@ -29,12 +29,23 @@ Dokumentasi ini disusun secara rinci dan terstruktur untuk mempermudah integrasi
    - [Identitas Tambahan Pegawai (`/api/employee-identities`)](#92-identitas-tambahan-pegawai)
    - [Kontak Darurat Pegawai (`/api/employee-contacts`)](#93-kontak-darurat-pegawai)
    - [Data Anak Pegawai (`/api/employee-children`)](#94-data-anak-pegawai)
-   - [Pengampu Mata Pelajaran Pegawai](#95-pengampu-mata-pelajaran-pegawai)
 10. [Modul Penjadwalan & Wali Kelas (`/api/schedules`)](#10-modul-penjadwalan--wali-kelas-apischedules)
     - [Jadwal Mengajar (Teaching Schedules)](#101-jadwal-mengajar)
     - [Penugasan Wali Kelas (Homeroom Assignments)](#102-penugasan-wali-kelas)
-11. [Panduan Integrasi End-to-End (Workflow)](#11-panduan-integrasi-end-to-end-workflow)
-12. [Format Standar Error Response](#12-format-standar-error-response)
+11. [Modul LMS (Learning Management System) (`/api/lms`)](#11-modul-lms-learning-management-system-apilms)
+    - [Materi Belajar (Materials)](#111-materi-belajar-materials)
+    - [Penugasan & Submission (Assignments & Submissions)](#112-penugasan--submission-assignments--submissions)
+    - [Portofolio Siswa (Portfolios)](#113-portofolio-siswa-portfolios)
+12. [Modul Akademik & Rapor (`/api/academics`)](#12-modul-akademik--rapor-apiacademics)
+    - [Rapor Semester (Report Cards)](#121-rapor-semester-report-cards)
+13. [Modul Presensi & Absensi (`/api/attendance`)](#13-modul-presensi--absensi-apiattendance)
+14. [Modul Pengumuman, Media, Profil, & Dashboard](#14-modul-pengumuman-media-profil--dashboard)
+    - [Pengumuman (`/api/announcements`)](#141-pengumuman-apiannouncements)
+    - [Upload Berkas (`/api/uploads`)](#142-upload-berkas-apiuploads)
+    - [Profil Pengguna (`/api/profile`)](#143-profil-pengguna--keamanan-apiprofile)
+    - [Statistik Dashboard (`/api/dashboard`)](#144-statistik-dashboard-apidashboard)
+    - [Database Backup (`/api/backup`)](#145-database-backup-apibackup)
+15. [Format Standar Error Response](#15-format-standar-error-response)
 
 ---
 
@@ -517,37 +528,160 @@ Mendukung relasi multi-anak (jika NIK orang tua sama, otomatis ditautkan tanpa d
 
 ---
 
-## 11. PANDUAN INTEGRASI END-TO-END (WORKFLOW)
+## 11. MODUL LMS (LEARNING MANAGEMENT SYSTEM) (`/api/lms`)
 
-### Alur 1: Autentikasi Frontend / Client
-```mermaid
-sequenceDiagram
-    autonumber
-    Client App->>Backend: POST /api/auth/login (username, password)
-    Backend-->>Client App: 200 OK (access_token)
-    Note over Client App: Simpan token di Secure Storage / Cookies
-    Client App->>Backend: GET /api/students/ (Header: Authorization: Bearer <token>)
-    Backend-->>Client App: 200 OK (List of Students)
-```
+### 11.1 Materi Belajar (Materials)
+* **Tambah Materi**: `POST /api/lms/materials/` *(Role: Teacher, Admin)*
+  ```json
+  {
+    "subject_id": "97e68fa7-8898-4447-97fe-902c38ce7139",
+    "classroom_id": "cc3f08f0-5cb3-4d3f-9be7-c6def98d60d5",
+    "title": "Pengenalan Aljabar Linier",
+    "content": "Rangkuman bab 1 aljabar...",
+    "file_path": "/uploads/materials/aljabar.pdf",
+    "video_url": "https://youtube.com/watch?v=xxx",
+    "is_active": true
+  }
+  ```
+* **Ambil Materi per Mapel**: `GET /api/lms/materials/subject/{subject_id}`
+* **Detail Materi**: `GET /api/lms/materials/{id}`
+* **Update Materi**: `PUT /api/lms/materials/{id}`
+* **Hapus Materi**: `DELETE /api/lms/materials/{id}`
+* **Tandai Selesai (Siswa)**: `POST /api/lms/materials/{id}/toggle-complete`
 
-### Alur 2: Registrasi Lengkap Siswa Baru (Multi-Step Form)
-1. **Langkah 1 (Buat User Login Siswa)**: `POST /api/users/` (Role: `student`) -> Dapatkan `user_id`.
-2. **Langkah 2 (Buat Master Biodata Siswa)**: `POST /api/students/` (Gunakan `user_id`) -> Dapatkan `student_id`.
-3. **Langkah 3 (Identitas & KK)**: `POST /api/identities/{student_id}`.
-4. **Langkah 4 (Alamat & Domisili)**: `POST /api/addresses/{student_id}`.
-5. **Langkah 5 (Nomor Telepon & Kontak)**: `POST /api/contacts/{student_id}`.
-6. **Langkah 6 (Data Ayah / Ibu / Wali)**: `POST /api/parents/{student_id}`.
-7. **Langkah 7 (Enrollment Kelas)**: `POST /api/enrollments/` (Tautkan `student_id`, `classroom_id`, `academic_year_id`, `semester_id`).
+### 11.2 Penugasan & Submission (Assignments & Submissions)
+* **Buat Tugas Baru**: `POST /api/lms/assignments/` *(Role: Teacher, Admin)*
+  ```json
+  {
+    "subject_id": "97e68fa7-8898-4447-97fe-902c38ce7139",
+    "classroom_id": "cc3f08f0-5cb3-4d3f-9be7-c6def98d60d5",
+    "title": "Tugas 1: Menyelesaikan Persamaan Matriks",
+    "description": "Kerjakan soal 1-5 dan kumpulkan dalam format PDF.",
+    "type": "file",
+    "deadline": "2026-09-10T23:59:59Z",
+    "max_score": 100.00
+  }
+  ```
+* **Daftar Tugas per Mapel**: `GET /api/lms/assignments/subject/{subject_id}`
+* **Daftar Tugas Mendekati Deadline**: `GET /api/lms/assignments/upcoming`
+* **Detail Tugas**: `GET /api/lms/assignments/{id}`
+* **Kumpulkan Tugas (Siswa)**: `POST /api/lms/submissions/`
+  ```json
+  {
+    "assignment_id": "b8159043-98fe-4a94-b209-661ff97a514d",
+    "content": "Berikut tautan lampiran tugas saya.",
+    "file_path": "/uploads/submissions/jawaban_siswa.pdf"
+  }
+  ```
+* **Lihat Submission Siswa (Guru)**: `GET /api/lms/assignments/{id}/submissions`
+* **Beri Nilai & Feedback**: `POST /api/lms/submissions/{id}/grade`
+  ```json
+  {
+    "score": 92.50,
+    "feedback": "Penjelasan di nomor 3 sangat sistematis dan tepat!"
+  }
+  ```
 
-### Alur 3: Registrasi Guru & Penjadwalan
-1. `POST /api/users/` (Role: `teacher`) -> Dapatkan `user_id`.
-2. `POST /api/employees/` -> Dapatkan `employee_id`.
-3. `POST /api/employees/{employee_id}/subjects/{subject_id}` (Tautkan mapel yang diampu).
-4. `POST /api/schedules/teaching/` (Tentukan jadwal hari, jam, kelas, semester).
+### 11.3 Portofolio Siswa (Portfolios)
+* **Buat Portofolio**: `POST /api/lms/portfolios/` *(Role: Student)*
+* **Daftar Portofolio Siswa**: `GET /api/lms/portfolios/student/{student_id}`
+* **Hapus Portofolio**: `DELETE /api/lms/portfolios/{id}`
 
 ---
 
-## 12. FORMAT STANDAR ERROR RESPONSE
+## 12. MODUL AKADEMIK & RAPOR (`/api/academics`)
+
+### 12.1 Rapor Semester (Report Cards)
+* **Buat Header Rapor**: `POST /api/academics/report-cards/`
+  ```json
+  {
+    "student_id": "18f921d7-2f3b-48aa-b924-d2e8b15d6c82",
+    "classroom_id": "cc3f08f0-5cb3-4d3f-9be7-c6def98d60d5",
+    "academic_year_id": "885b60a7-74bc-4686-9adb-8cf51861bf9d",
+    "semester_id": "4b684da3-0bca-4bc4-9d54-8e1da4d5a371",
+    "sick_count": 1,
+    "permitted_count": 2,
+    "unexcused_count": 0,
+    "homeroom_notes": "Siswa sangat berprestasi dan aktif dalam diskusi."
+  }
+  ```
+* **Ambil Rapor Siswa**: `GET /api/academics/report-cards/student/{student_id}`
+* **Detail Rapor**: `GET /api/academics/report-cards/{id}`
+* **Batch Input Nilai Mata Pelajaran**: `POST /api/academics/report-cards/{id}/items`
+  ```json
+  {
+    "items": [
+      {
+        "subject_id": "97e68fa7-8898-4447-97fe-902c38ce7139",
+        "knowledge_score": 88.00,
+        "skill_score": 90.00,
+        "final_score": 89.00,
+        "letter_grade": "A",
+        "competency_description": "Sangat terampil dalam memecahkan soal aljabar dan matriks."
+      }
+    ]
+  }
+  ```
+* **Terbitkan Rapor (Publish)**: `PUT /api/academics/report-cards/{id}/publish`
+
+---
+
+## 13. MODUL PRESENSI & ABSENSI (`/api/attendance`)
+
+* **Buka Sesi Presensi**: `POST /api/attendance/sessions/`
+  ```json
+  {
+    "classroom_id": "cc3f08f0-5cb3-4d3f-9be7-c6def98d60d5",
+    "subject_id": "97e68fa7-8898-4447-97fe-902c38ce7139",
+    "academic_year_id": "885b60a7-74bc-4686-9adb-8cf51861bf9d",
+    "semester_id": "4b684da3-0bca-4bc4-9d54-8e1da4d5a371",
+    "session_date": "2026-09-02",
+    "start_time": "07:30:00",
+    "end_time": "09:00:00",
+    "topic": "Pengenalan Vektor 2D"
+  }
+  ```
+* **Riwayat Sesi Kelas**: `GET /api/attendance/sessions/classroom/{classroom_id}`
+* **Detail Sesi**: `GET /api/attendance/sessions/{session_id}`
+* **Simpan Kehadiran Siswa (Batch)**: `POST /api/attendance/sessions/{session_id}/records`
+  ```json
+  {
+    "records": [
+      { "student_id": "18f921d7-2f3b-48aa-b924-d2e8b15d6c82", "status": "present", "remarks": "Hadir tepat waktu" },
+      { "student_id": "78a911d2-11bb-49cc-a924-a1e8b15d6c99", "status": "sick", "remarks": "Surat dokter" }
+    ]
+  }
+  ```
+* **Rekap Kehadiran Siswa (Summary)**: `GET /api/attendance/summary/student/{student_id}`
+
+---
+
+## 14. MODUL PENGUMUMAN, MEDIA, PROFIL, & DASHBOARD
+
+### 14.1 Pengumuman (`/api/announcements`)
+* `POST /api/announcements/` — Buat pengumuman baru (Sekolah/Kelas).
+* `GET /api/announcements/` — Ambil daftar pengumuman.
+* `GET /api/announcements/{id}` — Detail pengumuman.
+* `PUT /api/announcements/{id}` & `DELETE /api/announcements/{id}` — Edit / hapus pengumuman.
+
+### 14.2 Upload Berkas (`/api/uploads`)
+* `POST /api/uploads/avatar` — Upload avatar foto profil (Multipart Form).
+* `POST /api/uploads/document` — Upload file materi/tugas/jawaban (Multipart Form).
+
+### 14.3 Profil Pengguna & Keamanan (`/api/profile`)
+* `GET /api/profile/me` — Ambil data pengguna login (termasuk profil guru/siswa yang terhubung).
+* `PUT /api/profile/me` — Update data dasar profil (email/nama).
+* `PUT /api/profile/change-password` — Ganti password akun.
+
+### 14.4 Statistik Dashboard (`/api/dashboard`)
+* `GET /api/dashboard/stats` — Rekap total siswa, guru, kelas, mapel, materi, tugas, dan pengumuman.
+
+### 14.5 Database Backup (`/api/backup`)
+* `GET /api/backup/export-json` — *(Role: Admin)* Download seluruh data tabel database dalam format `.json`.
+
+---
+
+## 15. FORMAT STANDAR ERROR RESPONSE
 
 Semua error mengikuti format baku FastAPI:
 

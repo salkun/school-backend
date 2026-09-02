@@ -1,16 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import Response, FileResponse
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
-from sqlalchemy import inspect
+from sqlalchemy import inspect, text
 import json
 from datetime import datetime
-import subprocess
-import os
 
 from app.database import get_db, engine
 from app.dependencies import require_admin
-from app.models.user import User
-from app.config import settings
 
 router = APIRouter(
     prefix="/api/backup",
@@ -33,11 +29,11 @@ def export_database_json(db: Session = Depends(get_db)):
     }
     
     for table_name in table_names:
-        result = db.execute(f"SELECT * FROM {table_name}")
+        result = db.execute(text(f'SELECT * FROM "{table_name}"'))
         columns = result.keys()
         rows = [dict(zip(columns, row)) for row in result.fetchall()]
         
-        # Konversi tipe data yang tidak serializable (date/datetime/uuid) ke string
+        # Konversi tipe data yang tidak serializable (date/datetime/uuid/decimal) ke string
         for row in rows:
             for k, v in row.items():
                 if hasattr(v, 'isoformat'):
