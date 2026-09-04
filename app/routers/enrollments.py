@@ -25,6 +25,19 @@ def create_enrollment(data: StudentEnrollmentCreate, db: Session = Depends(get_d
     db.refresh(new_enrollment)
     return new_enrollment
 
+@router.get("/", response_model=List[StudentEnrollmentResponse], dependencies=[Depends(require_staff)])
+def get_all_enrollments(db: Session = Depends(get_db)):
+    return db.query(StudentEnrollment).all()
+
 @router.get("/student/{student_id}", response_model=List[StudentEnrollmentResponse], dependencies=[Depends(require_staff)])
 def get_student_enrollments(student_id: UUID, db: Session = Depends(get_db)):
     return db.query(StudentEnrollment).filter(StudentEnrollment.student_id == student_id).all()
+
+@router.delete("/{enrollment_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_enrollment(enrollment_id: UUID, db: Session = Depends(get_db)):
+    enrollment = db.query(StudentEnrollment).filter(StudentEnrollment.id == enrollment_id).first()
+    if not enrollment:
+        raise HTTPException(status_code=404, detail="Enrollment not found")
+    db.delete(enrollment)
+    db.commit()
+    return None

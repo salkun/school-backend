@@ -12,6 +12,8 @@ from app.database import Base
 class UserRole(str, Enum):
     ADMIN = "admin"
     TEACHER = "teacher"
+    EMPLOYEE = "employee"
+    STAFF = "staff"
     STUDENT = "student"
     PARENT = "parent"
 

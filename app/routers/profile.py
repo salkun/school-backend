@@ -15,11 +15,16 @@ router = APIRouter(
 
 @router.get("/me", dependencies=[Depends(require_all)])
 def get_my_profile(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    from app.dependencies import resolve_user_roles
+    user_roles = resolve_user_roles(current_user, db)
+
     profile_info = {
         "id": str(current_user.id),
         "username": current_user.username,
         "email": current_user.email,
+        "base_role": current_user.role,
         "role": current_user.role,
+        "roles": user_roles,
         "is_active": current_user.is_active,
         "school_id": str(current_user.school_id) if current_user.school_id else None,
         "created_at": current_user.created_at,
@@ -29,12 +34,36 @@ def get_my_profile(current_user: User = Depends(get_current_user), db: Session =
 
     if current_user.employee:
         emp = current_user.employee
+        
+        # Ambil daftar jabatan aktif
+        from app.models.employee import EmployeePosition
+        from app.models.master import Position
+        active_positions = (
+            db.query(Position)
+            .join(EmployeePosition, EmployeePosition.position_id == Position.id)
+            .filter(
+                EmployeePosition.employee_id == emp.id,
+                EmployeePosition.is_active == True
+            )
+            .all()
+        )
+        
         profile_info["employee_profile"] = {
             "id": str(emp.id),
             "nip": emp.nip,
             "full_name": emp.full_name,
             "employment_status": emp.employment_status,
-            "is_active": emp.is_active
+            "ptk_type": emp.ptk_type,
+            "is_active": emp.is_active,
+            "active_positions": [
+                {
+                    "id": str(p.id),
+                    "name": p.name,
+                    "code": p.code,
+                    "is_structural": p.is_structural
+                }
+                for p in active_positions
+            ]
         }
     elif current_user.students:
         std = current_user.students[0] if isinstance(current_user.students, list) and len(current_user.students) > 0 else current_user.students

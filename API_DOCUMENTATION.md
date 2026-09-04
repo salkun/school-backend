@@ -276,10 +276,12 @@ Authorization: Bearer <access_token>
   ```json
   {
     "name": "Kepala Program Keahlian RPL",
+    "code": "HEAD_OF_MAJOR",
     "is_structural": true,
     "is_active": true
   }
   ```
+  *(Catatan: `code` digunakan oleh sistem RBAC untuk menentukan hak akses spesifik pegawai, contoh: `CURRICULUM`, `PRINCIPAL`, `STAFF_TU`, `TREASURER`, `TEACHER`)*
 * **List**: `GET /api/positions/` (Staff & Admin)
 
 ### 7.2 Penetapan Riwayat Jabatan Pegawai

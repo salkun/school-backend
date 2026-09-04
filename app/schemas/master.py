@@ -72,8 +72,15 @@ class SubjectResponse(SubjectCreate):
 # --- 6. Position ---
 class PositionCreate(BaseModel):
     name: str = Field(..., example="Wakil Kepala Bidang Kurikulum")
+    code: Optional[str] = Field(None, example="CURRICULUM", max_length=50)
     is_structural: bool = False
     is_active: bool = True
+
+class PositionUpdate(BaseModel):
+    name: Optional[str] = None
+    code: Optional[str] = None
+    is_structural: Optional[bool] = None
+    is_active: Optional[bool] = None
 
 class PositionResponse(PositionCreate):
     id: UUID

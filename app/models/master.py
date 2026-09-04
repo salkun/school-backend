@@ -123,6 +123,7 @@ class Position(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String(100), nullable=False)
+    code = Column(String(50), index=True, nullable=True)  # e.g., "TEACHER", "CURRICULUM", "PRINCIPAL", "STAFF_TU"
     is_structural = Column(Boolean, default=False, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
 

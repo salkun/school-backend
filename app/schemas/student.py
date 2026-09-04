@@ -31,7 +31,6 @@ class StudentAddressCreate(BaseModel):
     district: str = Field(..., max_length=50)
     postal_code: Optional[str] = Field(None, max_length=10)
     residence_type: Optional[str] = Field(None, max_length=50)
-    # Teks string bebas (bukan kode angka lagi)
     transportation_mode: Optional[str] = None
 
 
@@ -54,20 +53,17 @@ class StudentContactResponse(StudentContactCreate):
     model_config = ConfigDict(from_attributes=True)
 
 # ==========================================================
-# 3. PARENT / ORANG TUA SCHEMAS
+# 4. PARENT / ORANG TUA SCHEMAS
 # ==========================================================
 class ParentBase(BaseModel):
     nik: Optional[str] = Field(None, max_length=16)
     full_name: str = Field(..., max_length=100)
     place_of_birth: Optional[str] = Field(None, max_length=50)
     birth_year: Optional[str] = Field(None, max_length=4)
-    
-    # Semua inputan di bawah berupa teks string bebas biasa
     education_code: Optional[str] = None
     occupation_code: Optional[str] = None
     income_code: Optional[str] = None
     special_need_code: Optional[str] = None
-    
     address: Optional[str] = None
     phone_number: Optional[str] = Field(None, max_length=20)
     whatsapp_number: Optional[str] = Field(None, max_length=20)
@@ -95,16 +91,29 @@ class StudentParentDetailResponse(BaseModel):
 
 
 # ==========================================================
-# 4. STUDENT MAIN SCHEMAS (BERSIH & TERPISAH)
+# 5. STUDENT MAIN SCHEMAS (BERSIH & TERPISAH)
 # ==========================================================
 class StudentCreate(BaseModel):
-    user_id: UUID
+    user_id: Optional[UUID] = None
+    username: Optional[str] = None
+    password: Optional[str] = None
+    email: Optional[str] = None
     school_id: Optional[UUID] = None
     nik: str = Field(..., min_length=16, max_length=16)
-    nisn: str = Field(..., min_length=5, max_length=7)
+    nisn: str = Field(..., min_length=5, max_length=20)
     full_name: str = Field(..., max_length=100)
-    first_name: str = Field(..., max_length=50)
+    first_name: Optional[str] = Field(None, max_length=50)
     last_name: Optional[str] = Field(None, max_length=50)
+
+
+class StudentUpdate(BaseModel):
+    user_id: Optional[UUID] = None
+    school_id: Optional[UUID] = None
+    nik: Optional[str] = Field(None, min_length=16, max_length=16)
+    nisn: Optional[str] = Field(None, min_length=5, max_length=20)
+    full_name: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
 
 
 class StudentResponse(BaseModel):
@@ -121,7 +130,7 @@ class StudentResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-# Dipakai saat GET /api/students/{student_id} untuk menampikan relasi lengkap
+# Dipakai saat GET /api/students/{student_id} untuk menampilkan relasi lengkap
 class StudentDetailResponse(StudentResponse):
     identity: Optional[StudentIdentityResponse] = None
     address: Optional[StudentAddressResponse] = None
@@ -131,7 +140,7 @@ class StudentDetailResponse(StudentResponse):
 
 
 # ==========================================================
-# 5. STUDENT ENROLLMENT (Riwayat Kelas)
+# 6. STUDENT ENROLLMENT (Riwayat Kelas)
 # ==========================================================
 class StudentEnrollmentCreate(BaseModel):
     student_id: UUID

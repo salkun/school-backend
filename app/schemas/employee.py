@@ -73,6 +73,11 @@ class EmployeePositionCreate(BaseModel):
     academic_year_id: UUID
     is_active: bool = True
 
+class EmployeePositionUpdate(BaseModel):
+    is_active: Optional[bool] = None
+    position_id: Optional[UUID] = None
+    academic_year_id: Optional[UUID] = None
+
 class EmployeePositionResponse(EmployeePositionCreate):
     id: UUID
     created_at: datetime

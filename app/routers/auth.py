@@ -27,11 +27,20 @@ def login_for_access_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # 3. Generate Access Token JWT
+    # 3. Resolve all roles (including positions)
+    from app.dependencies import resolve_user_roles
+    user_roles = resolve_user_roles(user, db)
+
+    # 4. Generate Access Token JWT
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.username, "role": user.role},
+        data={"sub": user.username, "role": user.role, "roles": user_roles},
         expires_delta=access_token_expires
     )
     
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {
+        "access_token": access_token, 
+        "token_type": "bearer",
+        "role": user.role,
+        "roles": user_roles
+    }
