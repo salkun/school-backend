@@ -32,7 +32,8 @@ from app.routers import (
     announcements,
     uploads,
     profile,
-    dashboard
+    dashboard,
+    ppdb
 )
 
 # Generate / sinkronisasi tabel otomatis ke database
@@ -85,6 +86,7 @@ app.include_router(attendance.router)
 app.include_router(announcements.router)
 app.include_router(uploads.router)
 app.include_router(backup.router)
+app.include_router(ppdb.router)
 
 @app.get("/", tags=["Root"])
 def root():
