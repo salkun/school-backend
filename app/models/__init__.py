@@ -25,3 +25,6 @@ from app.models.attendance import (
 from app.models.communication import (
     Announcement, MediaFile, ActivityLog, SystemSetting
 )
+from app.models.ppdb import (
+    PPDBAccount, PPDBRegistration
+)
