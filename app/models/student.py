@@ -14,7 +14,7 @@ class Student(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     school_id = Column(UUID(as_uuid=True), ForeignKey("school_identities.id", ondelete="SET NULL"), nullable=True)
     nik = Column(String(16), unique=True, index=True, nullable=False)
-    nisn = Column(String(20), unique=True, index=True, nullable=False)
+    nisn = Column(String(7), unique=True, index=True, nullable=False)
     full_name = Column(String(100), nullable=False)
     first_name = Column(String(50), nullable=False)
     last_name = Column(String(50), nullable=True)
