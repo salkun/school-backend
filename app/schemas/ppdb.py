@@ -53,6 +53,8 @@ class PPDBIdentityInput(BaseModel):
     religion: str = Field(..., max_length=50, example="Islam")
     place_of_birth: str = Field(..., max_length=50, example="Jakarta")
     date_of_birth: date = Field(..., example="2008-05-14")
+    birth_order: Optional[int] = Field(None, ge=1, description="Anak keberapa", example=2)
+    siblings_count: Optional[int] = Field(None, ge=0, description="Jumlah saudara", example=3)
 
 
 class PPDBAddressInput(BaseModel):
@@ -85,6 +87,7 @@ class PPDBParentDataInput(BaseModel):
     address: Optional[str] = Field(None, example="Jl. Merdeka No. 45")
     phone_number: Optional[str] = Field(None, max_length=20, example="081311223344")
     whatsapp_number: Optional[str] = Field(None, max_length=20, example="081311223344")
+    email: Optional[str] = Field(None, max_length=100, example="bambang.sudarsono@example.com")
 
 
 class PPDBParentRelationInput(BaseModel):
@@ -99,6 +102,11 @@ class PPDBRegistrationFormInput(BaseModel):
     full_name: str = Field(..., max_length=100, example="Ahmad Fauzi Rahman")
     first_name: Optional[str] = Field(None, max_length=50, example="Ahmad")
     last_name: Optional[str] = Field(None, max_length=50, example="Fauzi Rahman")
+    
+    # Data Asal Sekolah & Peminatan Jurusan
+    school_origin: Optional[str] = Field(None, max_length=150, example="SMP Negeri 1 Jakarta")
+    school_origin_address: Optional[str] = Field(None, max_length=500, example="Jl. Pendidikan No. 45")
+    major: Optional[str] = Field(None, max_length=50, example="reguler")
     
     identity: Optional[PPDBIdentityInput] = None
     address: Optional[PPDBAddressInput] = None
@@ -141,3 +149,13 @@ class PPDBAcceptResponse(BaseModel):
     full_name: str
     role: str
     migrated_at: datetime
+
+
+class PPDBAdminUpdateRequest(BaseModel):
+    full_name: Optional[str] = None
+    nik: Optional[str] = None
+    email: Optional[EmailStr] = None
+    payment_status: Optional[str] = None
+    payment_amount: Optional[Decimal] = None
+    registration_status: Optional[str] = None
+    form_data: Optional[Dict[str, Any]] = None

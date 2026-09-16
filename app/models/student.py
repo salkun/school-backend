@@ -19,6 +19,11 @@ class Student(Base):
     first_name = Column(String(50), nullable=False)
     last_name = Column(String(50), nullable=True)
 
+    # Data Asal Sekolah & Pilihan Jurusan PPDB
+    school_origin = Column(String(150), nullable=True)
+    school_origin_address = Column(Text, nullable=True)
+    major = Column(String(50), nullable=True)
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -43,6 +48,8 @@ class StudentIdentity(Base):
     place_of_birth = Column(String(50), nullable=False)
     date_of_birth = Column(DateTime, nullable=False)
     birth_certificate_number = Column(String(50), nullable=True)
+    birth_order = Column(Integer, nullable=True)         # Anak keberapa
+    siblings_count = Column(Integer, nullable=True)      # Dari berapa saudara
     nationality = Column(String(50), nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -98,6 +105,7 @@ class StudentParent(Base):
     guardian_name = Column(String(100), nullable=True)
     guardian_job = Column(String(50), nullable=True)
     parent_phone = Column(String(20), nullable=True)
+    parent_email = Column(String(100), nullable=True)
 
     student = relationship("Student", back_populates="parent")
 

@@ -27,7 +27,8 @@ from app.schemas.ppdb import (
     PPDBRegistrationFormInput,
     PPDBRegistrationResponse,
     PPDBPaymentVerifyRequest,
-    PPDBAcceptResponse
+    PPDBAcceptResponse,
+    PPDBAdminUpdateRequest
 )
 
 router = APIRouter(
@@ -297,7 +298,8 @@ def save_registration_form(
 def get_all_registrations(
     payment_status: Optional[str] = Query(None, description="Filter: unpaid, pending_verification, paid, rejected"),
     registration_status: Optional[str] = Query(None, description="Filter: pending, accepted, rejected"),
-    search: Optional[str] = Query(None, description="Cari nama atau NIK calon siswa"),
+    major: Optional[str] = Query(None, description="Filter jurusan: reguler, bahasa, tahfidz, ict"),
+    search: Optional[str] = Query(None, description="Cari nama, NIK, atau asal sekolah"),
     db: Session = Depends(get_db)
 ):
     """
@@ -311,11 +313,14 @@ def get_all_registrations(
         query = query.filter(PPDBRegistration.payment_status == payment_status)
     if registration_status:
         query = query.filter(PPDBRegistration.registration_status == registration_status)
+    if major:
+        query = query.filter(PPDBRegistration.form_data['major'].astext.ilike(major))
     if search:
         search_pattern = f"%{search}%"
         query = query.filter(
             (PPDBAccount.full_name.ilike(search_pattern)) | 
-            (PPDBAccount.nik.ilike(search_pattern))
+            (PPDBAccount.nik.ilike(search_pattern)) |
+            (PPDBRegistration.form_data['school_origin'].astext.ilike(search_pattern))
         )
 
     return query.order_by(PPDBRegistration.created_at.desc()).all()
@@ -468,7 +473,10 @@ def accept_and_migrate_student(
         nisn=nisn,
         full_name=full_name,
         first_name=first_name,
-        last_name=last_name
+        last_name=last_name,
+        school_origin=form.get("school_origin"),
+        school_origin_address=form.get("school_origin_address"),
+        major=form.get("major")
     )
     db.add(new_student)
     db.flush()
@@ -485,7 +493,9 @@ def accept_and_migrate_student(
             gender=identity_data.get("gender") or "Laki-laki",
             religion=identity_data.get("religion") or "Islam",
             place_of_birth=identity_data.get("place_of_birth") or "-",
-            date_of_birth=dob or datetime.now()
+            date_of_birth=dob or datetime.now(),
+            birth_order=identity_data.get("birth_order"),
+            siblings_count=identity_data.get("siblings_count")
         )
         db.add(new_identity)
 
@@ -521,7 +531,7 @@ def accept_and_migrate_student(
     parent_relations = form.get("student_parents") or []
     for item in parent_relations:
         rel_type = item.get("relationship_type", 1)
-        p_data = item.get("parent") or {}
+        p_data = item.get("parent") or item
         p_nik = p_data.get("nik")
 
         parent_obj = None
@@ -531,7 +541,7 @@ def accept_and_migrate_student(
         if not parent_obj:
             parent_obj = Parent(
                 nik=p_nik,
-                full_name=p_data.get("full_name") or "Orang Tua Siswa",
+                full_name=p_data.get("full_name") or p_data.get("name") or "Orang Tua Siswa",
                 place_of_birth=p_data.get("place_of_birth"),
                 birth_year=p_data.get("birth_year"),
                 education_code=p_data.get("education_code"),
@@ -539,11 +549,19 @@ def accept_and_migrate_student(
                 income_code=p_data.get("income_code"),
                 special_need_code=p_data.get("special_need_code"),
                 address=p_data.get("address"),
-                phone_number=p_data.get("phone_number"),
-                whatsapp_number=p_data.get("whatsapp_number")
+                phone_number=p_data.get("phone_number") or p_data.get("phone"),
+                whatsapp_number=p_data.get("whatsapp_number") or p_data.get("phone"),
+                email=p_data.get("email")
             )
             db.add(parent_obj)
             db.flush()
+        else:
+            if not parent_obj.email and p_data.get("email"):
+                parent_obj.email = p_data.get("email")
+            if not parent_obj.phone_number and (p_data.get("phone_number") or p_data.get("phone")):
+                parent_obj.phone_number = p_data.get("phone_number") or p_data.get("phone")
+            if not parent_obj.whatsapp_number and (p_data.get("whatsapp_number") or p_data.get("phone")):
+                parent_obj.whatsapp_number = p_data.get("whatsapp_number") or p_data.get("phone")
 
         # Tautkan relasi
         relation_obj = StudentParentRelation(
@@ -569,3 +587,80 @@ def accept_and_migrate_student(
         role=new_user.role,
         migrated_at=datetime.now()
     )
+
+
+@router.put(
+    "/registrations/{registration_id}",
+    response_model=PPDBRegistrationResponse,
+    dependencies=[Depends(require_admin)],
+    summary="Update Pendaftar PPDB Admin"
+)
+def update_registration(
+    registration_id: UUID,
+    data: PPDBAdminUpdateRequest,
+    db: Session = Depends(get_db)
+):
+    reg = db.query(PPDBRegistration).options(
+        joinedload(PPDBRegistration.account)
+    ).filter(PPDBRegistration.id == registration_id).first()
+
+    if not reg:
+        raise HTTPException(status_code=404, detail="Data pendaftaran tidak ditemukan")
+
+    if reg.account:
+        if data.full_name is not None and data.full_name.strip():
+            reg.account.full_name = data.full_name.strip()
+        if data.nik is not None and data.nik.strip():
+            new_nik = data.nik.strip()
+            if new_nik != reg.account.nik:
+                existing = db.query(PPDBAccount).filter(PPDBAccount.nik == new_nik, PPDBAccount.id != reg.account.id).first()
+                if existing:
+                    raise HTTPException(status_code=400, detail="NIK sudah digunakan oleh akun lain")
+                reg.account.nik = new_nik
+        if data.email is not None and str(data.email).strip():
+            new_email = str(data.email).strip()
+            if new_email != reg.account.email:
+                existing = db.query(PPDBAccount).filter(PPDBAccount.email == new_email, PPDBAccount.id != reg.account.id).first()
+                if existing:
+                    raise HTTPException(status_code=400, detail="Email sudah digunakan oleh akun lain")
+                reg.account.email = new_email
+
+    if data.payment_status is not None:
+        reg.payment_status = data.payment_status
+    if data.payment_amount is not None:
+        reg.payment_amount = data.payment_amount
+    if data.registration_status is not None:
+        reg.registration_status = data.registration_status
+    if data.form_data is not None:
+        current_form = dict(reg.form_data or {})
+        current_form.update(data.form_data)
+        if reg.account:
+            current_form["full_name"] = reg.account.full_name
+            current_form["nik"] = reg.account.nik
+        reg.form_data = current_form
+
+    db.commit()
+    db.refresh(reg)
+    return reg
+
+
+@router.delete(
+    "/registrations/{registration_id}",
+    dependencies=[Depends(require_admin)],
+    summary="Hapus Pendaftar PPDB Admin"
+)
+def delete_registration(registration_id: UUID, db: Session = Depends(get_db)):
+    reg = db.query(PPDBRegistration).options(
+        joinedload(PPDBRegistration.account)
+    ).filter(PPDBRegistration.id == registration_id).first()
+
+    if not reg:
+        raise HTTPException(status_code=404, detail="Data pendaftaran tidak ditemukan")
+
+    account = reg.account
+    db.delete(reg)
+    if account:
+        db.delete(account)
+
+    db.commit()
+    return {"message": "Data pendaftar berhasil dihapus secara permanen"}

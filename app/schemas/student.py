@@ -13,6 +13,8 @@ class StudentIdentityCreate(BaseModel):
     religion: str = Field(..., max_length=30)
     place_of_birth: str = Field(..., max_length=50)
     date_of_birth: date
+    birth_order: Optional[int] = Field(None, ge=1, description="Anak keberapa")
+    siblings_count: Optional[int] = Field(None, ge=0, description="Dari berapa saudara / jumlah saudara")
 
 
 class StudentIdentityResponse(StudentIdentityCreate):
@@ -67,6 +69,7 @@ class ParentBase(BaseModel):
     address: Optional[str] = None
     phone_number: Optional[str] = Field(None, max_length=20)
     whatsapp_number: Optional[str] = Field(None, max_length=20)
+    email: Optional[str] = Field(None, max_length=100)
 
 
 class ParentCreate(ParentBase):
@@ -104,6 +107,9 @@ class StudentCreate(BaseModel):
     full_name: str = Field(..., max_length=100)
     first_name: Optional[str] = Field(None, max_length=50)
     last_name: Optional[str] = Field(None, max_length=50)
+    school_origin: Optional[str] = Field(None, max_length=150)
+    school_origin_address: Optional[str] = Field(None, max_length=500)
+    major: Optional[str] = Field(None, max_length=50)
 
 
 class StudentUpdate(BaseModel):
@@ -114,6 +120,9 @@ class StudentUpdate(BaseModel):
     full_name: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+    school_origin: Optional[str] = None
+    school_origin_address: Optional[str] = None
+    major: Optional[str] = None
 
 
 class StudentResponse(BaseModel):
@@ -125,6 +134,9 @@ class StudentResponse(BaseModel):
     full_name: str
     first_name: str
     last_name: Optional[str]
+    school_origin: Optional[str] = None
+    school_origin_address: Optional[str] = None
+    major: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     model_config = ConfigDict(from_attributes=True)

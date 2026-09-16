@@ -21,6 +21,7 @@ class ParentCreateWithRelation(BaseModel):
     address: Optional[str] = None
     phone_number: Optional[str] = Field(None, max_length=20)
     whatsapp_number: Optional[str] = Field(None, max_length=20)
+    email: Optional[str] = Field(None, max_length=100)
 
 
 # --- 2. Schema Murni Parent (Untuk Response) ---
@@ -37,6 +38,7 @@ class ParentResponse(BaseModel):
     address: Optional[str] = None
     phone_number: Optional[str] = None
     whatsapp_number: Optional[str] = None
+    email: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

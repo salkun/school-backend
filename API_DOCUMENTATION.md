@@ -821,7 +821,9 @@ Struktur data siswa didesain modular guna mendukung formulir pendaftaran bertaha
   "gender": "Laki-laki",
   "religion": "Islam",
   "place_of_birth": "Jakarta",
-  "date_of_birth": "2008-05-14"
+  "date_of_birth": "2008-05-14",
+  "birth_order": 2,
+  "siblings_count": 3
 }
 ```
 
@@ -907,6 +909,7 @@ Struktur data siswa didesain modular guna mendukung formulir pendaftaran bertaha
 | `address` | string | Tidak | Alamat tempat tinggal |
 | `phone_number` | string | Tidak | Nomor telepon rumah/kantor |
 | `whatsapp_number` | string | Tidak | Nomor kontak WhatsApp |
+| `email` | string | Tidak | Alamat email orang tua |
 
 ```json
 {
@@ -920,7 +923,8 @@ Struktur data siswa didesain modular guna mendukung formulir pendaftaran bertaha
   "income_code": "03",
   "address": "Jl. Merdeka No. 45",
   "phone_number": "081311223344",
-  "whatsapp_number": "081311223344"
+  "whatsapp_number": "081311223344",
+  "email": "bambang.sudarsono@example.com"
 }
 ```
 

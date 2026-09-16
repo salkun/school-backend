@@ -77,7 +77,10 @@ def create_student(data: StudentCreate, db: Session = Depends(get_db)):
         nisn=data.nisn,
         full_name=full_name,
         first_name=first_name,
-        last_name=last_name
+        last_name=last_name,
+        school_origin=data.school_origin,
+        school_origin_address=data.school_origin_address,
+        major=data.major
     )
     db.add(new_student)
     db.commit()

@@ -26,6 +26,7 @@ class Parent(Base):
     address = Column(Text, nullable=True)
     phone_number = Column(String(20), nullable=True)
     whatsapp_number = Column(String(20), nullable=True)
+    email = Column(String(100), nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
