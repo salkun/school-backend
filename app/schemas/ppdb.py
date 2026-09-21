@@ -9,7 +9,7 @@ from decimal import Decimal
 # 1. AKUN CALON SISWA (PPDB ACCOUNT)
 # ==========================================
 class PPDBAccountRegister(BaseModel):
-    nik: str = Field(..., min_length=16, max_length=16, example="3201012345670001")
+    nik: Optional[str] = Field(None, min_length=16, max_length=16, example="3201012345670001")
     full_name: str = Field(..., max_length=100, example="Ahmad Fauzi Rahman")
     email: EmailStr = Field(..., example="ahmad.fauzi@gmail.com")
     password: str = Field(..., min_length=6, example="Pendaftar123!")
@@ -17,7 +17,7 @@ class PPDBAccountRegister(BaseModel):
 
 class PPDBAccountResponse(BaseModel):
     id: UUID
-    nik: str
+    nik: Optional[str] = None
     full_name: str
     email: str
     is_active: bool
@@ -38,7 +38,7 @@ class PPDBTokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     account_id: UUID
-    nik: str
+    nik: Optional[str] = None
     full_name: str
     email: str
 

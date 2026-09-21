@@ -90,9 +90,10 @@ def register_ppdb_account(data: PPDBAccountRegister, db: Session = Depends(get_d
     Sistem otomatis menginisialisasi tabel staging ppdb_registrations dengan status 'unpaid'.
     """
     # 1. Validasi duplikasi NIK atau Email di tabel ppdb_accounts
-    existing_nik = db.query(PPDBAccount).filter(PPDBAccount.nik == data.nik).first()
-    if existing_nik:
-        raise HTTPException(status_code=400, detail="NIK sudah pernah didaftarkan pada sistem PPDB")
+    if data.nik:
+        existing_nik = db.query(PPDBAccount).filter(PPDBAccount.nik == data.nik).first()
+        if existing_nik:
+            raise HTTPException(status_code=400, detail="NIK sudah pernah didaftarkan pada sistem PPDB")
 
     existing_email = db.query(PPDBAccount).filter(PPDBAccount.email == data.email).first()
     if existing_email:
@@ -160,7 +161,7 @@ def login_ppdb(data: PPDBLoginRequest, db: Session = Depends(get_db)):
     # Generate Token JWT khusus PPDB
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     token_payload = {
-        "sub": account.nik,
+        "sub": account.email or str(account.id),
         "account_id": str(account.id),
         "email": account.email,
         "role": "ppdb_applicant"
@@ -280,6 +281,11 @@ def save_registration_form(
 
     # Simpan ke tabel staging
     registration.form_data = form_dict
+
+    # Sinkronisasi NIK ke akun pendaftar dari formulir
+    if data.nik:
+        current_account.nik = data.nik
+        db.add(current_account)
 
     db.commit()
     db.refresh(registration)
