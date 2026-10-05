@@ -1,23 +1,38 @@
-name: Deploy FastAPI to Server 
-  on: 
-    push: 
-      branches: 
-      - main 
-jobs: 
-  deploy: 
-    runs-on: kali-latest 
-    
-    steps: 
-      - name: Executing remote SSH commands using ssh key 
-      uses: appleboy/ssh-action@v1.0.3 
-      with: 
-        host: ${{ secrets.SERVER_HOST }} 
-        username: ${{ secrets.SERVER_USER }} 
-        key: ${{ secrets.SSH_PRIVATE_KEY }} 
-        script: | 
-          # 1\. Masuk ke folder proyek di server 
-          cd /home/kali/sekolah-backend 
-          # 2\. Tarik kode terbaru dari GitHub 
-          git pull origin main 
-          # 3\. Build ulang dan jalankan container Docker 
-          docker-compose up -d --build
+name: Deploy School Backend (FastAPI)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy to Server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            echo "🚀 Memulai proses deploy School Backend..."
+            
+            # 1. Masuk ke direktori project (PATH LAMA)
+            cd /home/deploy/school-backend
+            
+            # 2. Tarik kode terbaru dari GitHub
+            git pull origin main
+            
+            # 3. Aktifkan virtual environment dan update dependencies
+            source venv/bin/activate
+            pip install --upgrade pip
+            pip install -r requirements.txt
+            
+            # 4. Restart service (SERVICE LAMA)
+            echo "🔄 Merestart service school-api..."
+            sudo systemctl restart school-api
+            
+            echo "✅ Deploy berhasil! Aplikasi sudah berjalan dengan kode terbaru."
